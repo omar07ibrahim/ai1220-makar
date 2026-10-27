@@ -63,14 +63,41 @@
 
     // Step 2.1: load the songs and show one card per song in #playlist.
     async function loadPlaylist() {
+      const response = await fetch("/songs");
+      const songs = await response.json();
+      document.querySelector("#playlist").innerHTML = songs
+        .map((song) => songCard(song.id, song.title, song.artist, song.votes))
+        .join("");
     }
 
     // Step 2.2: add the song typed in #title and #artist.
     async function addSong() {
+      const titleInput = document.querySelector("#title");
+      const artistInput = document.querySelector("#artist");
+      const response = await fetch("/songs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: titleInput.value, artist: artistInput.value }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        titleInput.value = "";
+        artistInput.value = "";
+        showMessage("");
+        await loadPlaylist();
+      } else {
+        showMessage(data.error);
+      }
     }
 
     // Step 2.3: vote for the song with this id.
     async function vote(id) {
+      const response = await fetch(`/songs/${encodeURIComponent(id)}/votes`, { method: "POST" });
+      if (!response.ok) {
+        const data = await response.json();
+        showMessage(data.error);
+      }
+      await loadPlaylist();
     }
 
     document.querySelector("#add-btn").addEventListener("click", addSong);
