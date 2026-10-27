@@ -12,8 +12,8 @@ a fresh app with create_app() and opens the page at "/".
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, JSONResponse
 
 HERE = Path(__file__).resolve().parent
 
@@ -32,11 +32,41 @@ def create_app() -> FastAPI:
     def page():
         return FileResponse(HERE / "index.html")
 
-    # Write your three endpoints here, inside create_app(), for example:
-    #
-    # @app.get("/...")
-    # def all_songs():
-    #     return songs
+    def error(status: int, message: str) -> JSONResponse:
+        # The one error body of the contract, used by both refusals.
+        return JSONResponse(status_code=status, content={"error": message})
+
+    def filled(value) -> bool:
+        return isinstance(value, str) and value.strip() != ""
+
+    @app.get("/songs")
+    def all_songs():
+        return songs  # in the order they were added
+
+    @app.post("/songs", status_code=201)
+    async def add_song(request: Request):
+        try:
+            body = await request.json()
+        except ValueError:
+            body = None
+        if not isinstance(body, dict) or not filled(body.get("title")) or not filled(body.get("artist")):
+            return error(400, "Please enter both a title and an artist")
+        song = {
+            "id": max((s["id"] for s in songs), default=0) + 1,
+            "title": body["title"],
+            "artist": body["artist"],
+            "votes": 0,
+        }
+        songs.append(song)
+        return song
+
+    @app.post("/songs/{id}/votes")
+    def vote(id: str):
+        for song in songs:
+            if str(song["id"]) == id:
+                song["votes"] += 1
+                return song
+        return error(404, f"There is no song {id}")
 
     return app
 
