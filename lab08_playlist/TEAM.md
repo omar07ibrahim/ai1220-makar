@@ -2,5 +2,5 @@
 
 | Name | GitHub username | Role |
 | --- | --- | --- |
-|  |  | backend |
-|  |  | frontend |
+| Makar Ulesov | triplepiner | backend |
+| Omar Ibrahim | omar07ibrahim | frontend |
